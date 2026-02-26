@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线翻译工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        .error {
+            border-left-color: #f44336;
+            background-color: #ffebee;
+            color: #d32f2f;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .language-pair {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .language-pair > div {
+            flex: 1;
+        }
+        .language-pair label {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 在线翻译工具</h1>
+        
+        <div class="language-pair">
+            <div>
+                <label for="sourceLang">源语言</label>
+                <select id="sourceLang">
+                    <option value="auto">自动检测</option>
+                    <option value="zh">中文</option>
+                    <option value="en">英语</option>
+                    <option value="ja">日语</option>
+                    <option value="ko">韩语</option>
+                    <option value="fr">法语</option>
+                    <option value="de">德语</option>
+                    <option value="es">西班牙语</option>
+                    <option value="ru">俄语</option>
+                    <option value="ar">阿拉伯语</option>
+                    <option value="it">意大利语</option>
+                    <option value="pt">葡萄牙语</option>
+                    <option value="hi">印地语</option>
+                </select>
+            </div>
+            <div>
+                <label for="targetLang">目标语言</label>
+                <select id="targetLang">
+                    <option value="en">英语</option>
+                    <option value="zh">中文</option>
+                    <option value="ja">日语</option>
+                    <option value="ko">韩语</option>
+                    <option value="fr">法语</option>
+                    <option value="de">德语</option>
+                    <option value="es">西班牙语</option>
+                    <option value="ru">俄语</option>
+                    <option value="ar">阿拉伯语</option>
+                    <option value="it">意大利语</option>
+                    <option value="pt">葡萄牙语</option>
+                    <option value="hi">印地语</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="inputText">输入要翻译的文本</label>
+            <textarea id="inputText" placeholder="请输入要翻译的文本..."></textarea>
+        </div>
+        
+        <button id="translateBtn" onclick="translateText()">翻译</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 获取支持的语言列表
+        async function loadLanguages() {
+            try {
+                const response = await fetch('/languages');
+                const languages = await response.json();
+                
+                // 更新下拉菜单选项（这里我们直接在HTML中硬编码了选项，实际项目中可以动态生成）
+            } catch (error) {
+                console.error('加载语言列表失败:', error);
+            }
+        }
+
+        // 执行翻译
+        async function translateText() {
+            const inputText = document.getElementById('inputText').value.trim();
+            const sourceLang = document.getElementById('sourceLang').value;
+            const targetLang = document.getElementById('targetLang').value;
+            const resultDiv = document.getElementById('result');
+            const translateBtn = document.getElementById('translateBtn');
+
+            if (!inputText) {
+                alert('请输入要翻译的文本');
+                return;
+            }
+
+            // 显示加载状态
+            translateBtn.disabled = true;
+            translateBtn.textContent = '翻译中...';
+            resultDiv.innerHTML = '<div class="result loading">正在翻译...</div>';
+
+            try {
+                const response = await fetch('/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: inputText,
+                        source_lang: sourceLang,
+                        target_lang: targetLang
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result">
+                            <h3>翻译结果</h3>
+                            <p><strong>原文：</strong>${data.original_text}</p>
+                            <p><strong>译文：</strong>${data.translated_text}</p>
+                            <p><small>源语言: ${data.source_language} | 目标语言: ${data.target_language}</small></p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h3>翻译失败</h3>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>翻译失败</h3>
+                        <p>网络错误: ${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                // 恢复按钮状态
+                translateBtn.disabled = false;
+                translateBtn.textContent = '翻译';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLanguages();
+            
+            // 添加回车键翻译功能
+            document.getElementById('inputText').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter' && event.ctrlKey) {
+                    translateText();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
